@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 from database.connection import DatabaseConnection
 
 class Book:
@@ -6,13 +7,31 @@ class Book:
         self.id = book_id
         self.title = title
         self.author_id = author_id
-        self.isbn = isbn
-        self.publication_date = publication_date
+        self.isbn = self.validate_isbn(isbn)
+        self.publication_date = self.validate_publication_date(publication_date)
         self.availability = availability
+
+    @staticmethod
+    def validate_isbn(isbn):
+        """Validate that the ISBN is either 10 or 13 digits."""
+        if not re.match(r'^(?:\d{10}|\d{13})$', isbn):
+            raise ValueError("ISBN must be either 10 or 13 digits.")
+        return isbn
+
+    @staticmethod
+    def validate_publication_date(publication_date):
+        """Validate that the publication date is in the format YYYY-MM-DD."""
+        try:
+            datetime.strptime(publication_date, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError("Publication date must be in YYYY-MM-DD format.")
+        return publication_date
 
     @staticmethod
     def add_book(db, title, author_id, isbn, publication_date):
         """Add a new book to the database"""
+        isbn = Book.validate_isbn(isbn)
+        publication_date = Book.validate_publication_date(publication_date)
         query = """
         INSERT INTO books (title, author_id, isbn, publication_date, availability)
         VALUES (%s, %s, %s, %s, %s)
